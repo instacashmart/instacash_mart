@@ -5,8 +5,5 @@
     "dev": "npm --prefix instacashmart-react run dev",
     "build": "npm --prefix instacashmart-react run build",
     "preview": "npm --prefix instacashmart-react run preview"
-  },
-  "dependencies": {
-    "firebase": "^13.1.0"
   }
 }

@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "installCommand": "npm --prefix instacashmart-react ci",
+  "buildCommand": "npm --prefix instacashmart-react run build",
+  "outputDirectory": "instacashmart-react/dist"
+}
