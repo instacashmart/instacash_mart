@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Smartphone">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3f4652"/>
+      <stop offset="1" stop-color="#1f242c"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9fb4d6"/>
+      <stop offset="0.55" stop-color="#5d77a6"/>
+      <stop offset="1" stop-color="#2f3f63"/>
+    </linearGradient>
+  </defs>
+  <rect x="58" y="14" width="84" height="172" rx="14" fill="url(#body)"/>
+  <rect x="62" y="18" width="76" height="164" rx="11" fill="url(#screen)"/>
+  <circle cx="100" cy="27" r="3.2" fill="#11151b"/>
+  <rect x="143" y="52" width="2.5" height="22" rx="1.2" fill="#2a3039"/>
+  <rect x="143" y="80" width="2.5" height="12" rx="1.2" fill="#2a3039"/>
+  <rect x="86" y="174" width="28" height="2.5" rx="1.2" fill="#e7ecf5" opacity="0.8"/>
+</svg>

@@ -1,0 +1,168 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == "TzIyZJzRz7XJG1MN8mooXZrKQTo2";
+    }
+
+    function safeFields(documentId, requiredFields, allowedFields) {
+      return request.resource.data.id == documentId
+        && request.resource.data.keys().hasAll(requiredFields)
+        && request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function validNewOrder(orderId, type) {
+      return request.resource.data.status == "New"
+        && request.resource.data.createdAt is string
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 30
+        && orderId.size() >= 35
+        && request.resource.data.position == 0
+        && (type == "sell"
+          ? request.auth != null
+            && request.resource.data.userId == request.auth.uid
+            && request.resource.data.name is string
+            && request.resource.data.name.size() <= 100
+            && request.resource.data.email is string
+            && request.resource.data.email.size() <= 254
+            && safeFields(orderId,
+            ["id", "userId", "name", "email", "createdAt", "status", "phone", "address",
+              "date", "category", "model"],
+            ["id", "userId", "name", "email", "createdAt", "status", "phone", "address",
+              "date", "category", "model",
+              "storage", "ram", "variant", "condition", "screenBodyIssues",
+              "functionalProblems", "calls", "powerOn", "touch", "originalScreen",
+              "display", "keyboard", "battery", "sound", "caseCharging", "controller",
+              "discDrive", "lens", "shutter", "warranty", "gstBill", "accessories",
+              "quote", "expectedPrice", "position"])
+          : safeFields(orderId,
+            ["id", "createdAt", "status", "phone", "address", "name", "product", "price"],
+            ["id", "createdAt", "status", "phone", "address", "name", "product",
+              "price", "category", "seller", "pincode", "payment", "position"]));
+    }
+
+    function validNewSubmission(documentId, requiredFields, allowedFields) {
+      return safeFields(documentId, requiredFields, allowedFields)
+        && request.resource.data.createdAt is string
+        && request.resource.data.position == 0;
+    }
+
+    match /sell/{orderId} {
+      allow create: if isAdmin() || validNewOrder(orderId, "sell");
+      allow read: if isAdmin()
+        || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /buy/{orderId} {
+      allow create: if isAdmin() || validNewOrder(orderId, "buy");
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /vehicleLeads/{leadId} {
+      allow create: if isAdmin() || (
+        validNewSubmission(leadId,
+          ["id", "createdAt", "status", "name", "phone", "vehicleId", "vehicle", "type"],
+          ["id", "createdAt", "status", "name", "phone", "vehicleId", "vehicle", "type",
+            "price", "city", "seller", "sellerPhone", "purpose", "date", "offer", "message",
+            "position"])
+        && request.resource.data.status == "New"
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.message.size() <= 2000
+      );
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if isAdmin() || (
+        validNewSubmission(feedbackId,
+          ["id", "createdAt", "status", "name", "phone", "rating", "topic", "message", "public"],
+          ["id", "createdAt", "status", "name", "phone", "rating", "topic", "message",
+            "public", "hidden", "position"])
+        && request.resource.data.status == "pending"
+        && request.resource.data.hidden == false
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.message.size() <= 3000
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+      );
+      allow read: if isAdmin()
+        || (resource.data.public == true
+          && resource.data.hidden != true
+          && resource.data.status == "approved");
+      allow update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow create: if isAdmin() || (
+        validNewSubmission(reviewId,
+          ["id", "createdAt", "status", "productKey", "productName", "orderId", "name", "rating"],
+          ["id", "createdAt", "status", "productKey", "productName", "orderId", "name",
+            "rating", "text", "position"])
+        && request.resource.data.status == "pending"
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.text.size() <= 3000
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+      );
+      allow read: if isAdmin() || resource.data.status == "approved";
+      allow update, delete: if isAdmin();
+    }
+
+    match /vehicles/{vehicleId} {
+      allow create: if isAdmin() || (
+        validNewSubmission(vehicleId,
+          ["id", "createdAt", "status", "type", "brand", "model", "price", "city", "sellerName", "phone"],
+          ["id", "createdAt", "status", "type", "brand", "model", "variant", "year", "km",
+            "fuel", "transmission", "owners", "city", "price", "estimate", "description",
+            "image", "sellerType", "sellerName", "phone", "position"])
+        && request.resource.data.status == "Pending"
+        && request.resource.data.sellerName.size() <= 100
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.image is string
+        && request.resource.data.image.size() <= 850000
+      );
+      allow read: if isAdmin() || resource.data.status == "Live";
+      allow update, delete: if isAdmin();
+    }
+
+    match /publicTracking/{trackingId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isAdmin() || (
+        trackingId.matches("^(CN|CNB)-[A-F0-9]{32}$")
+        && request.resource.data.id == trackingId
+        && request.resource.data.type in ["sell", "buy"]
+        && request.resource.data.status == "New"
+        && request.resource.data.keys().hasAll(
+          ["id", "type", "createdAt", "status", "history", "note"]
+        )
+        && request.resource.data.keys().hasOnly(
+          ["id", "type", "createdAt", "status", "history", "note",
+            "model", "storage", "date", "product", "price"]
+        )
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /{collection}/{documentId} {
+      allow read: if collection in [
+        "products",
+        "popular",
+        "trending",
+        "sellModels",
+        "vehicleProducts"
+      ];
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
